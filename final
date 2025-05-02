@@ -1,0 +1,520 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define RESET   "\x1b[0m"
+#define RED     "\x1b[31m"
+#define GREEN   "\x1b[32m"
+#define YELLOW  "\x1b[33m"
+#define BLUE    "\x1b[34m"
+#define CYAN    "\x1b[36m"
+#define MAX_BENEFICIARI 100
+#define MAX_CNP 14
+#define MAX_NR_CONT 20
+#define MAX_PAROLA 20
+#define MAX_NUME 50
+#define MAX_PRENUME 50
+#define MAX_RASPUNS 100
+#define MAX_LOG_ENTRY 200
+
+typedef struct
+{
+    char nume[MAX_NUME];
+    char prenume[MAX_PRENUME];
+    char cnp[MAX_CNP];
+    char nrCont[MAX_NR_CONT];
+    char parola[MAX_PAROLA];
+    double soldCurent;
+    char raspuns1[MAX_RASPUNS];
+    char raspuns2[MAX_RASPUNS];
+} Beneficiar;
+int validareCNP(char cnp[])
+{
+    int lungime = strlen(cnp);
+    if (lungime != 13)
+    {
+        printf("CNP-ul trebuie sa aiba exact 13 cifre.\n");
+        return 0;
+    }
+    for (int i = 0; i < lungime; i++)
+    {
+        if (!isdigit(cnp[i]))
+        {
+            printf("CNP-ul trebuie sa contina doar cifre.\n");
+            return 0;
+        }
+    }
+    return 1;
+}
+
+void actualizeazaFisierBeneficiari(Beneficiar beneficiari[], int numarBeneficiari)
+{
+    FILE *fisier = fopen("beneficiari.txt", "w");
+    if (!fisier)
+    {
+        printf("Eroare la deschiderea fisierului pentru scriere!\n");
+        return;
+    }
+
+    for (int i = 0; i < numarBeneficiari; i++)
+    {
+        fprintf(fisier, "%s %s %s %s %s %.2f %s %s\n",
+                beneficiari[i].nume,
+                beneficiari[i].prenume,
+                beneficiari[i].cnp,
+                beneficiari[i].nrCont,
+                beneficiari[i].parola,
+                beneficiari[i].soldCurent,
+                beneficiari[i].raspuns1,
+                beneficiari[i].raspuns2);
+    }
+
+    fclose(fisier);
+}
+
+void citesteBeneficiariDinFisier(Beneficiar beneficiari[], int *numarBeneficiari)
+{
+    FILE *fisier = fopen("beneficiari.txt", "r");
+    if (!fisier)
+    {
+        printf("Nu s-a putut deschide fisierul beneficiari.txt!\n");
+        return;
+    }
+
+    char linie[512];
+    while (*numarBeneficiari < MAX_BENEFICIARI && fgets(linie, sizeof(linie), fisier))
+    {
+        int rezultat = sscanf(linie, "%s %s %s %s %s %lf %s %s",
+                              beneficiari[*numarBeneficiari].nume,
+                              beneficiari[*numarBeneficiari].prenume,
+                              beneficiari[*numarBeneficiari].cnp,
+                              beneficiari[*numarBeneficiari].nrCont,
+                              beneficiari[*numarBeneficiari].parola,
+                              &beneficiari[*numarBeneficiari].soldCurent,
+                              beneficiari[*numarBeneficiari].raspuns1,
+                              beneficiari[*numarBeneficiari].raspuns2);
+
+        if (rezultat == 8)
+        {
+            (*numarBeneficiari)++;
+        }
+        else
+        {
+            printf("Eroare la citirea liniei: %s", linie);
+        }
+    }
+
+    fclose(fisier);
+    printf("Beneficiarii au fost cititi din fisier cu succes.\n");
+}
+
+void introducereBeneficiar(Beneficiar beneficiari[], int *numarBeneficiari)
+{
+    printf("\n=====INTRODUCERE BENEFICIAR=====\n");
+    printf("Introduceti 0 pentru a reveni la meniu.\n");
+    if (*numarBeneficiari < MAX_BENEFICIARI)
+    {
+        Beneficiar nouBeneficiar;
+        printf("Introduceti numele: ");
+        scanf("%s", nouBeneficiar.nume);
+        if (strcmp(nouBeneficiar.nume, "0") == 0) return;
+        printf("Introduceti prenumele: ");
+        scanf("%s", nouBeneficiar.prenume);
+        do
+        {
+            printf("Introduceti CNP-ul: ");
+            scanf("%s", nouBeneficiar.cnp);
+            if (!validareCNP(nouBeneficiar.cnp))
+                printf("Introduceti un CNP corect.\n");
+        } while (!validareCNP(nouBeneficiar.cnp));
+        printf("Introduceti numarul de cont: ");
+        scanf("%s", nouBeneficiar.nrCont);
+        printf("Introduceti parola: ");
+        scanf("%s", nouBeneficiar.parola);
+        printf("Introduceti soldul curent: ");
+        scanf("%lf", &nouBeneficiar.soldCurent);
+        printf("Intrebare de securitate 1: Care este numele primului dvs. animal de companie? ");
+        scanf("%s", nouBeneficiar.raspuns1);
+        printf("Intrebare de securitate 2: In ce oras v-ati nascut? ");
+        scanf("%s", nouBeneficiar.raspuns2);
+        beneficiari[*numarBeneficiari] = nouBeneficiar;
+        (*numarBeneficiari)++;
+        actualizeazaFisierBeneficiari(beneficiari, *numarBeneficiari);
+        
+        char detalii[MAX_LOG_ENTRY];
+        snprintf(detalii, sizeof(detalii), "A fost adaugat beneficiarul %s %s cu CNP %s", 
+                 nouBeneficiar.nume, nouBeneficiar.prenume, nouBeneficiar.cnp);
+        printf("Beneficiar adaugat cu succes.\n");
+    }
+    else
+        printf("Numarul maxim de beneficiari a fost atins.\n");
+}
+
+void meniuIntroducereBeneficiari(Beneficiar beneficiari[], int *numarBeneficiari)
+{
+    int optiune;
+    printf("\n=====INTRODUCERE BENEFICIARI=====");
+    printf("\n1. Introducere de la tastatura");
+    printf("\n2. Citire din fisier");
+    printf("\nOptiunea dvs.: ");
+    scanf("%d", &optiune);
+    switch (optiune)
+    {
+    case 1:
+        introducereBeneficiar(beneficiari, numarBeneficiari);
+        break;
+    case 2:
+        citesteBeneficiariDinFisier(beneficiari, numarBeneficiari);
+        break;
+    default:
+        printf("Optiune invalida!\n");
+        break;
+    }
+}
+
+void asteaptaEnter()
+{
+    printf("\nApasati Enter pentru a reveni la meniu...");
+    while (getchar() != '\n'); 
+    getchar(); 
+}
+
+void afisareBeneficiarCNP(Beneficiar beneficiari[], int numarBeneficiari, char cnpCautat[])
+{
+    printf("\n=====AFISARE BENEFICIAR DUPA CNP=====\n");
+    printf("Introduceti CNP-ul (0 pentru a reveni la meniu): ");
+    if (strcmp(cnpCautat, "0") == 0) return;
+    int gasit = 0;
+    for (int i = 0; i < numarBeneficiari; i++)
+    {
+        if (strcmp(beneficiari[i].cnp, cnpCautat) == 0)
+        {
+            printf("Nume: %s\n", beneficiari[i].nume);
+            printf("Prenume: %s\n", beneficiari[i].prenume);
+            printf("CNP: %s\n", beneficiari[i].cnp);
+            printf("Numar de cont: %s\n", beneficiari[i].nrCont);
+            printf("Sold curent: %.2f\n", beneficiari[i].soldCurent);
+            gasit = 1;
+            break;
+        }
+    }
+    if (!gasit)
+        printf("Nu exista beneficiar cu CNP-ul specificat.\n");
+}
+
+void afisareDinFisier()
+{
+    FILE *fisier = fopen("beneficiari.txt", "r");
+    if (!fisier)
+    {
+        printf("Nu s-a putut deschide fisierul beneficiari.txt!\n");
+        return;
+    }
+
+    Beneficiar b;
+    int index = 1;
+    printf("\n===== DATELE DIN FISIER =====\n");
+    while (fscanf(fisier, "%s %s %s %s %s %lf %s %s",
+                  b.nume, b.prenume, b.cnp, b.nrCont, b.parola, &b.soldCurent,
+                  b.raspuns1, b.raspuns2) == 8)
+    {
+        printf("Beneficiar %d:\n", index++);
+        printf("Nume: %s\n", b.nume);
+        printf("Prenume: %s\n", b.prenume);
+        printf("CNP: %s\n", b.cnp);
+        printf("Numar cont: %s\n", b.nrCont);
+        printf("Sold curent: %.2f\n", b.soldCurent);
+        printf("---------------------------\n");
+    }
+
+    fclose(fisier);
+}
+
+int cautareBeneficiar(Beneficiar beneficiari[], int numarBeneficiari, char cnpCautat[])
+{
+    for (int i = 0; i < numarBeneficiari; i++)
+    {
+        if (strcmp(beneficiari[i].cnp, cnpCautat) == 0)
+            return 1;
+    }
+    return 0;
+}
+
+void stergereBeneficiar(Beneficiar beneficiari[], int *numarBeneficiari, char cnpCautat[])
+{
+    printf("\n=====STERGERE BENEFICIAR=====\n");
+    int gasit = 0;
+    for (int i = 0; i < *numarBeneficiari; i++)
+    {
+        if (strcmp(beneficiari[i].cnp, cnpCautat) == 0)
+        {
+            beneficiari[i] = beneficiari[*numarBeneficiari - 1];
+            (*numarBeneficiari)--;
+            gasit = 1;
+            actualizeazaFisierBeneficiari(beneficiari, *numarBeneficiari);
+            printf("Beneficiar sters cu succes.\n");
+            break;
+        }
+    }
+    if (!gasit)
+        printf("Nu exista beneficiar cu CNP-ul specificat.\n");
+}
+
+int introducereParola(Beneficiar beneficiari[], int numarBeneficiari, char nrCont[])
+{
+    char parola[MAX_PAROLA];
+    printf("Introduceti parola pentru contul %s: ", nrCont);
+    scanf("%s", parola);
+    for (int i = 0; i < numarBeneficiari; i++)
+    {
+        if (strcmp(beneficiari[i].nrCont, nrCont) == 0)
+        {
+            if (strcmp(beneficiari[i].parola, parola) == 0)
+                return 1;
+            else
+            {
+                printf("Parola incorecta!\n");
+                return 0;
+            }
+        }
+    }
+    printf("Cont inexistent!\n");
+    return 0;
+}
+
+void extragereNumerar(Beneficiar beneficiari[], int numarBeneficiari, char nrCont[])
+{
+    printf("\n== EXTRAGERE NUMERAR ==\n");
+    printf("Introduceti numarul de cont (0 pentru a reveni la meniu): ");
+    scanf("%s", nrCont);
+    if (strcmp(nrCont, "0") == 0) return;
+    if (introducereParola(beneficiari, numarBeneficiari, nrCont))
+    {
+        double suma;
+        printf("Introduceti suma pe care doriti sa o extrageti: ");
+        scanf("%lf", &suma);
+        for (int i = 0; i < numarBeneficiari; i++)
+        {
+            if (strcmp(beneficiari[i].nrCont, nrCont) == 0)
+            {
+                if (beneficiari[i].soldCurent >= suma)
+                {
+                    beneficiari[i].soldCurent -= suma;
+                    actualizeazaFisierBeneficiari(beneficiari, numarBeneficiari);
+                    printf("Suma de %.2f a fost extrasa cu succes.\n", suma);
+                    printf("Soldul actualizat este: %.2f\n", beneficiari[i].soldCurent);
+                }
+                else
+                    printf("Fonduri insuficiente!\n");
+                return;
+            }
+        }
+    }
+}
+
+void sortareBeneficiari(Beneficiar beneficiari[], int numarBeneficiari)
+{
+    printf("=====SORTARE BENEFICIAR=====");
+    for (int i = 0; i < numarBeneficiari - 1; i++)
+    {
+        for (int j = i + 1; j < numarBeneficiari; j++)
+        {
+            if (strcmp(beneficiari[i].nume, beneficiari[j].nume) > 0)
+            {
+                Beneficiar temp = beneficiari[i];
+                beneficiari[i] = beneficiari[j];
+                beneficiari[j] = temp;
+            }
+        }
+    }
+    actualizeazaFisierBeneficiari(beneficiari, numarBeneficiari);
+    printf("Beneficiarii au fost sortati dupa nume.\n");
+}
+
+void aplicareImpozitAnual(Beneficiar beneficiari[], int numarBeneficiari)
+{
+    printf("\n=====APLICARE IMPOZIT ANUAL==\n");
+    for (int i = 0; i < numarBeneficiari; i++)
+        beneficiari[i].soldCurent *= 0.95;
+    actualizeazaFisierBeneficiari(beneficiari, numarBeneficiari);
+    printf("Impozitul anual a fost aplicat cu succes.\n");
+}
+
+void recuperareParola(Beneficiar beneficiari[], int numarBeneficiari, char cnp[])
+{
+    printf("\n=====RECUPERARE PAROLA=====\n");
+    for (int i = 0; i < numarBeneficiari; i++)
+    {
+        if (strcmp(beneficiari[i].cnp, cnp) == 0)
+        {
+            char r1[MAX_RASPUNS], r2[MAX_RASPUNS];
+            printf("Intrebare de securitate: Care este numele primului dvs. animal de companie? ");
+            scanf("%s", r1);
+            printf("Intrebare de securitate: In ce oras v-ati nascut? ");
+            scanf("%s", r2);
+            if (strcmp(r1, beneficiari[i].raspuns1) == 0 && strcmp(r2, beneficiari[i].raspuns2) == 0)
+            {
+                char nouaParola[MAX_PAROLA];
+                printf("Introduceti noua parola pentru contul %s: ", beneficiari[i].nrCont);
+                scanf("%s", nouaParola);
+                strcpy(beneficiari[i].parola, nouaParola);
+                actualizeazaFisierBeneficiari(beneficiari, numarBeneficiari);
+                printf("Parola a fost actualizata cu succes.\n");
+                return;
+            }
+            else
+            {
+                printf("Raspunsuri incorecte la intrebarile de securitate.\n");
+                return;
+            }
+        }
+    }
+    printf("CNP-ul introdus nu este asociat niciunui beneficiar.\n");
+}
+
+void afisareBeneficiari(Beneficiar beneficiari[], int numarBeneficiari)
+{
+    printf("\n=====AFISARE BENEFICIARI=====\n");
+    if (numarBeneficiari == 0)
+    {
+        printf("Nu exista beneficiari adaugati.\n");
+        return;
+    }
+    printf("Lista beneficiarilor:\n");
+    for (int i = 0; i < numarBeneficiari; i++)
+    {
+        printf("Beneficiar %d:\n", i + 1);
+        printf("Nume: "BLUE"%s"RESET"\n", beneficiari[i].nume);
+        printf("Prenume: "CYAN"%s"RESET"\n", beneficiari[i].prenume);
+        printf("CNP: "YELLOW"%s"RESET"\n", beneficiari[i].cnp);
+        printf("Numar de cont: "GREEN"%s"RESET"\n", beneficiari[i].nrCont);
+        printf("Sold curent: %.2f\n\n", beneficiari[i].soldCurent);
+    }
+}
+void stergereBeneficiarDupaNume(Beneficiar beneficiari[], int *numarBeneficiari, char numeCautat[])
+{
+    int gasit = 0;
+    char *detalii;
+    for (int i = 0; i < *numarBeneficiari; i++)
+    {
+        if (strcmp(beneficiari[i].nume, numeCautat) == 0)
+        {
+            char detalii[MAX_LOG_ENTRY];
+            snprintf(detalii, sizeof(detalii), "A fost sters beneficiarul %s %s cu CNP %s",
+                     beneficiari[i].nume, beneficiari[i].prenume, beneficiari[i].cnp);
+            
+            beneficiari[i] = beneficiari[*numarBeneficiari - 1];
+            (*numarBeneficiari)--;
+            gasit = 1;
+            break;
+        }
+    }
+    if (gasit)
+    {
+        actualizeazaFisierBeneficiari(beneficiari, *numarBeneficiari);
+        printf("Beneficiarul cu numele '%s' a fost sters cu succes din fisier si memorie.\n", numeCautat);
+    }
+    else
+    {
+        printf("Nu a fost gasit niciun beneficiar cu numele '%s'.\n", numeCautat);
+    }
+}
+int main()
+{
+    Beneficiar beneficiari[MAX_BENEFICIARI];
+    int numarBeneficiari = 0;
+    int optiune;
+    char cnp[MAX_CNP], nrCont[MAX_NR_CONT];
+    do
+    {
+        system("clear"); 
+        printf("\n===== MENIU =====\n");
+        printf("1. Introducere beneficiar\n");
+        printf("2. Afisare beneficiar dupa CNP\n");
+        printf("3. Cautare beneficiar\n");
+        printf("4. Stergere beneficiar\n");
+        printf("5. Afisare toti beneficiarii\n");
+        printf("6. Sortare beneficiari dupa nume\n");
+        printf("7. Extragere numerar\n");
+        printf("8. Aplicare impozit anual\n");
+        printf("9. Recuperare parola\n");
+        printf("10. Afisare date din fisier\n");
+        printf("11. Stergere beneficiar dupa nume\n");
+        printf("0. Iesire\n");
+        printf("Optiunea dvs.: ");
+        scanf("%d", &optiune);
+        switch (optiune)
+        {
+        case 1:
+            meniuIntroducereBeneficiari(beneficiari, &numarBeneficiari);
+            asteaptaEnter();
+            break;
+        case 2:
+            printf("Introduceti CNP-ul beneficiarului: ");
+            scanf("%s", cnp);
+            afisareBeneficiarCNP(beneficiari, numarBeneficiari, cnp);
+            asteaptaEnter();
+            break;
+        case 3:
+            printf("Introduceti CNP-ul pentru cautare: ");
+            scanf("%s", cnp);
+            if (cautareBeneficiar(beneficiari, numarBeneficiari, cnp))
+                printf("Beneficiar gasit.\n");
+            else
+                printf("Beneficiar inexistent.\n");
+            asteaptaEnter();
+            break;
+        case 4:
+            printf("Introduceti CNP-ul pentru stergere: ");
+            scanf("%s", cnp);
+            stergereBeneficiar(beneficiari, &numarBeneficiari, cnp);
+            asteaptaEnter();
+            break;
+        case 5:
+            afisareBeneficiari(beneficiari, numarBeneficiari);
+            asteaptaEnter();
+            break;
+        case 6:
+            sortareBeneficiari(beneficiari, numarBeneficiari);
+            asteaptaEnter();
+            break;
+        case 7:
+            printf("Introduceti numarul de cont pentru extragere numerar: ");
+            scanf("%s", nrCont);
+            extragereNumerar(beneficiari, numarBeneficiari, nrCont);
+            asteaptaEnter();
+            break;
+        case 8:
+            aplicareImpozitAnual(beneficiari, numarBeneficiari);
+            asteaptaEnter();
+            break;
+        case 9:
+            printf("Introduceti CNP-ul asociat contului: ");
+            scanf("%s", cnp);
+            recuperareParola(beneficiari, numarBeneficiari, cnp);
+            asteaptaEnter();
+            break;
+        case 10:
+            afisareDinFisier();
+            asteaptaEnter();
+            break;
+        case 11:
+            printf("Introduceti numele beneficiarului pentru stergere: ");
+            char numeStergere[MAX_NUME];
+            scanf("%s", numeStergere);
+            stergereBeneficiarDupaNume(beneficiari, &numarBeneficiari, numeStergere);
+            asteaptaEnter();
+            break;
+        case 0:
+            printf("La revedere!\n");
+            break;
+        default:
+            printf("Optiune invalida!\n");
+            asteaptaEnter();
+            break;
+        }
+    } while (optiune != 0);
+    return 0;
+}
