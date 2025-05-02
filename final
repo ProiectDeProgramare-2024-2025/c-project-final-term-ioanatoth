@@ -393,33 +393,58 @@ void afisareBeneficiari(Beneficiar beneficiari[], int numarBeneficiari)
         printf("Sold curent: %.2f\n\n", beneficiari[i].soldCurent);
     }
 }
-void stergereBeneficiarDupaNume(Beneficiar beneficiari[], int *numarBeneficiari, char numeCautat[])
-{
+void stergereBeneficiarDupaNume(Beneficiar beneficiari[], int *numarBeneficiari, char numeCautat[]) {
     int gasit = 0;
-    char *detalii;
-    for (int i = 0; i < *numarBeneficiari; i++)
-    {
-        if (strcmp(beneficiari[i].nume, numeCautat) == 0)
-        {
-            char detalii[MAX_LOG_ENTRY];
-            snprintf(detalii, sizeof(detalii), "A fost sters beneficiarul %s %s cu CNP %s",
-                     beneficiari[i].nume, beneficiari[i].prenume, beneficiari[i].cnp);
-            
-            beneficiari[i] = beneficiari[*numarBeneficiari - 1];
-            (*numarBeneficiari)--;
+    int indecsi[MAX_BENEFICIARI];
+    int contor = 0;
+    for (int i = 0; i < *numarBeneficiari; i++) {
+        if (strcmp(beneficiari[i].nume, numeCautat) == 0) {
+            indecsi[contor++] = i;
             gasit = 1;
+        }
+    }
+    if (!gasit) {
+        printf("Nu a fost gasit niciun beneficiar cu numele '%s'.\n", numeCautat);
+        return;
+    }
+    if (contor == 1) {
+        int i = indecsi[0];
+        printf("Beneficiarul %s %s a fost sters cu succes.\n", beneficiari[i].nume, beneficiari[i].prenume);
+        for (int j = i; j < *numarBeneficiari - 1; j++) {
+            beneficiari[j] = beneficiari[j + 1];
+        }
+        (*numarBeneficiari)--;
+        actualizeazaFisierBeneficiari(beneficiari, *numarBeneficiari);
+        return;
+    }
+    printf("S-au gasit %d beneficiari cu numele '%s':\n", contor, numeCautat);
+    for (int j = 0; j < contor; j++) {
+        int i = indecsi[j];
+        printf("%d. %s %s (CNP: %s)\n", j+1, beneficiari[i].nume, beneficiari[i].prenume, beneficiari[i].cnp);
+    }
+    char prenumeCautat[MAX_PRENUME];
+    printf("Introduceti prenumele beneficiarului pe care doriti sa il stergeti: ");
+    scanf("%s", prenumeCautat);
+    int gasitPrenume = 0;
+    int indexGasit = -1;
+    for (int j = 0; j < contor; j++) {
+        int i = indecsi[j];
+        if (strcmp(beneficiari[i].prenume, prenumeCautat) == 0) {
+            indexGasit = i;
+            gasitPrenume = 1;
             break;
         }
     }
-    if (gasit)
-    {
-        actualizeazaFisierBeneficiari(beneficiari, *numarBeneficiari);
-        printf("Beneficiarul cu numele '%s' a fost sters cu succes din fisier si memorie.\n", numeCautat);
+    if (!gasitPrenume) {
+        printf("Nu exista niciun beneficiar cu numele '%s' si prenumele '%s'.\n", numeCautat, prenumeCautat);
+        return;
     }
-    else
-    {
-        printf("Nu a fost gasit niciun beneficiar cu numele '%s'.\n", numeCautat);
+    printf("Beneficiarul %s %s a fost sters cu succes.\n", beneficiari[indexGasit].nume, beneficiari[indexGasit].prenume);
+    for (int j = indexGasit; j < *numarBeneficiari - 1; j++) {
+        beneficiari[j] = beneficiari[j + 1];
     }
+    (*numarBeneficiari)--;
+    actualizeazaFisierBeneficiari(beneficiari, *numarBeneficiari);
 }
 int main()
 {
