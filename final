@@ -124,7 +124,7 @@ void introducereBeneficiar(Beneficiar beneficiari[], int *numarBeneficiari)
         scanf("%s", nouBeneficiar.prenume);
         do
         {
-            printf("Introduceti CNP-ul: ");
+            printf("Introduceti CNP-ul (13 cifre): ");
             scanf("%s", nouBeneficiar.cnp);
             if (!validareCNP(nouBeneficiar.cnp))
                 printf("Introduceti un CNP corect.\n");
@@ -133,7 +133,7 @@ void introducereBeneficiar(Beneficiar beneficiari[], int *numarBeneficiari)
         scanf("%s", nouBeneficiar.nrCont);
         printf("Introduceti parola: ");
         scanf("%s", nouBeneficiar.parola);
-        printf("Introduceti soldul curent: ");
+        printf("Introduceti soldul curent (ex. 400, 800.45): ");
         scanf("%lf", &nouBeneficiar.soldCurent);
         printf("Intrebare de securitate 1: Care este numele primului dvs. animal de companie? ");
         scanf("%s", nouBeneficiar.raspuns1);
@@ -184,7 +184,7 @@ void asteaptaEnter()
 void afisareBeneficiarCNP(Beneficiar beneficiari[], int numarBeneficiari, char cnpCautat[])
 {
     printf("\n=====AFISARE BENEFICIAR DUPA CNP=====\n");
-    printf("Introduceti CNP-ul (0 pentru a reveni la meniu): ");
+    printf("Introduceti CNP-ul-13 cifre (0 pentru a reveni la meniu): ");
     if (strcmp(cnpCautat, "0") == 0) return;
     int gasit = 0;
     for (int i = 0; i < numarBeneficiari; i++)
@@ -195,7 +195,7 @@ void afisareBeneficiarCNP(Beneficiar beneficiari[], int numarBeneficiari, char c
             printf("Prenume: %s\n", beneficiari[i].prenume);
             printf("CNP: %s\n", beneficiari[i].cnp);
             printf("Numar de cont: %s\n", beneficiari[i].nrCont);
-            printf("Sold curent: %.2f\n", beneficiari[i].soldCurent);
+            printf("Sold curent (ex. 20, 140.78): %.2f\n", beneficiari[i].soldCurent);
             gasit = 1;
             break;
         }
@@ -446,6 +446,48 @@ void stergereBeneficiarDupaNume(Beneficiar beneficiari[], int *numarBeneficiari,
     (*numarBeneficiari)--;
     actualizeazaFisierBeneficiari(beneficiari, *numarBeneficiari);
 }
+void depunereNumerar(Beneficiar beneficiari[], int numarBeneficiari, char nrCont[])
+{
+    printf("\n== INTRODUCERE NUMERAR ==\n");
+    printf("Introduceti numarul de cont (0 pentru a reveni la meniu): ");
+    scanf("%s", nrCont);
+    if (strcmp(nrCont, "0") != 0) return;
+    if (introducereParola(beneficiari, numarBeneficiari, nrCont))
+    {
+        int contGasit = 0;
+        for (int i = 0; i < numarBeneficiari; i++)
+        {
+            if (strcmp(beneficiari[i].nrCont, nrCont) == 0)
+            {
+                contGasit = 1;
+                break;
+            }
+        }
+        if (!contGasit)
+        {
+            printf("Numar de cont inexistent! Introduceti un numar de cont existent!\n");
+            return;
+        }
+        double suma;
+        printf("Introduceti suma pe care doriti sa o depuneti: ");
+        scanf("%lf", &suma);
+        if (suma <= 0)
+        {
+            printf("Suma introdusa trebuie sa fie pozitiva!\n");
+            return;
+        }
+        for (int i = 0; i < numarBeneficiari; i++)
+        {
+            if (strcmp(beneficiari[i].nrCont, nrCont) == 0)
+            {
+                beneficiari[i].soldCurent += suma;
+                printf("Suma de %.2f a fost adaugata cu succes.\n", suma);
+                printf("Soldul actualizat este: %.2f\n", beneficiari[i].soldCurent);
+                return;
+            }
+        }
+    }
+}
 int main()
 {
     Beneficiar beneficiari[MAX_BENEFICIARI];
@@ -467,6 +509,7 @@ int main()
         printf("9. Recuperare parola\n");
         printf("10. Afisare date din fisier\n");
         printf("11. Stergere beneficiar dupa nume\n");
+        printf("12. Depunere numerar\n");
         printf("0. Iesire\n");
         printf("Optiunea dvs.: ");
         scanf("%d", &optiune);
@@ -531,6 +574,10 @@ int main()
             scanf("%s", numeStergere);
             stergereBeneficiarDupaNume(beneficiari, &numarBeneficiari, numeStergere);
             asteaptaEnter();
+            break;
+        case 12:
+            printf("Introduceti suma pe care vreti sa o depuneti: ");
+            depunereNumerar(beneficiari, numarBeneficiari, nrCont);
             break;
         case 0:
             printf("La revedere!\n");
